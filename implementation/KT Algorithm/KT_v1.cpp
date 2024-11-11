@@ -7,6 +7,8 @@ void takeInput(vector<pair<int, int>> &intervals, int i);
 void printIntervals(vector<pair<int, int>> intervals);
 int computeLevel(vector<vector<pair<int, int>>> &levels, pair<int, int> newInterval);
 void printLevels(vector<vector<pair<int, int>>> levels);
+void computeColor(vector<vector<pair<int, int>>> &levels, pair<int, int> newInterval, map<pair<int, int>, int> &color, int level);
+void printColors(map<pair<int, int>, int> color);
 
 int main(){
     int n;
@@ -37,7 +39,7 @@ int main(){
         else
             levels[level].push_back(newInterval);
 
-        // color[newInterval] = level;
+        computeColor(levels, newInterval, color, level);
     }
     
     if(!check){
@@ -46,6 +48,7 @@ int main(){
     }
     printIntervals(intervals);
     printLevels(levels);
+    printColors(color);
     return 0;
 }
 
@@ -104,5 +107,51 @@ void printLevels(vector<vector<pair<int, int>>> levels){
             cout << "[" << interval.first << " , " << interval.second << ") ";
         }
         cout << "\n";
+    }
+}
+
+void computeColor(vector<vector<pair<int, int>>> &levels, pair<int, int> newInterval, map<pair<int, int>, int> &color, int level){
+    // what i want to do is - I want to assign the color to the new interval
+    // i will extract all the intervals of level: level and sort it, then i will assign the color to the new interval
+    vector<pair<int, int>> intervals = levels[level];
+    sort(intervals.begin(), intervals.end());
+    vector<pair<int, int>> overlappingIntervals;
+    for(auto interval: intervals){
+        // now add those intervals which overlap with the new interval in the colors vector
+        if(interval.second > newInterval.first && interval.first < newInterval.second){
+            overlappingIntervals.push_back(interval);
+        }
+    }
+    // now i will assign the color to the new interval
+    int colorUsed1 = (level)*3+1;
+    int colorUsed2 = (level)*3+2;
+    int colorUsed3 = (level)*3+3;
+    for(int i = 0; i < overlappingIntervals.size(); i++){
+        if(color[overlappingIntervals[i]] == colorUsed1){
+            colorUsed1 = -1;
+        }
+        else if(color[overlappingIntervals[i]] == colorUsed2){
+            colorUsed2 = -1;
+        }
+        else if(color[overlappingIntervals[i]] == colorUsed3){
+            colorUsed3 = -1;
+        }
+    }
+    if(colorUsed1 != -1){
+        color[newInterval] = colorUsed1;
+    }
+    else if(colorUsed2 != -1){
+        color[newInterval] = colorUsed2;
+    }
+    else if(colorUsed3 != -1){
+        color[newInterval] = colorUsed3;
+    }
+    return;
+}
+
+void printColors(map<pair<int, int>, int> color){
+    cout << "The colors are: \n";
+    for(auto interval: color){
+        cout << "[" << interval.first.first << " , " << interval.first.second << ") \t:\t" << interval.second << "\n";
     }
 }

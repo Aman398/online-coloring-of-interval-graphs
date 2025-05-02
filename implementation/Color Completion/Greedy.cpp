@@ -28,7 +28,7 @@ int main(){
     vector<bool>isColorUsed(k+1);
     int numOfColorsUsed = 0;
     for(int i=0;i<k-1;i++){
-        if( (intervals[i].first + 1 > intervals[k].first) && (intervals[i].first + 1 < intervals[k].first + 1) ){
+        if( (intervals[i].first + 1 > intervals[k-1].first) && (intervals[i].first + 1 < intervals[k-1].first + 1) ){
             isColorUsed[intervals[i].second] = true;
             numOfColorsUsed++;
         }

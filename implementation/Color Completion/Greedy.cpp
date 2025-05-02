@@ -3,14 +3,30 @@
 #include<bits/stdc++.h>
 using namespace std;
 
-int main(){
-    // chromatic number 
-    int k;
+void takeInput(int &k, vector<pair<float, int>> &intervals);
+void GreedyColorCompletion(vector<pair<float, int>> &intervals, int k);
+void print(vector<pair<float, int>> &intervals);
+
+int main(){ 
+    int k; // chromatic number
+    vector<pair<float, int>> intervals(2*k);
+    
+    takeInput(k, intervals);
+
+    GreedyColorCompletion(intervals, k);
+
+    print(intervals);
+
+    return 0;
+}
+
+void takeInput(int &k, vector<pair<float, int>> &intervals){
+    // chromatic number
     cout << "Enter the chromatic number: ";
     cin >> k;
 
     // number of intervals
-    vector<pair<float, int>> intervals(2*k);
+    intervals.resize(2*k);
 
     // input intervals, only start is needed as it is unit interval graph
     cout << "Enter the intervals: ";
@@ -23,10 +39,13 @@ int main(){
     for(int i=0;i<k;i++){
         cin >> intervals[i].second;
     }
+}
 
+void GreedyColorCompletion(vector<pair<float, int>>& intervals, int k){
     // now check how many intervals are intersecting the kth interval and what color is assigned to them
-    vector<bool>isColorUsed(k+1);
+    vector<bool> isColorUsed(k+1, false);
     int numOfColorsUsed = 0;
+
     for(int i=0;i<k-1;i++){
         if( (intervals[i].first + 1 > intervals[k-1].first) && (intervals[i].first + 1 < intervals[k-1].first + 1) ){
             isColorUsed[intervals[i].second] = true;
@@ -35,7 +54,7 @@ int main(){
     }
     isColorUsed[intervals[k-1].second] = true; // color of kth interval is also used
     numOfColorsUsed++;
-    
+
     // now assign colors to next (k - numOfColorsUsed) intervals using colors which are not used
     int it = 1;
     for(int i=0;i<k-numOfColorsUsed;i++){
@@ -49,14 +68,16 @@ int main(){
     for(int i=2*k-numOfColorsUsed;i<2*k;i++){
         intervals[i].second = intervals[i-k].second;
     }
-
-    // now print the colors assigned to the intervals
-    for(int i=0;i<2*k;i++){
-        cout << intervals[i].second << " ";
-    }
-
-    return 0;
 }
+
+void print(vector<pair<float, int>> &intervals){
+    // now print the colors assigned to the intervals
+    cout << "Colors assigned to the intervals:\n";
+    for(int i=0;i<intervals.size();i++){
+        cout << intervals[i].first << ":\t" << intervals[i].second << "\n";
+    }
+}
+
 
 /*
 Some sample inputs

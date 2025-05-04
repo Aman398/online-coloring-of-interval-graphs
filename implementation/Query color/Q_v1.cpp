@@ -17,6 +17,7 @@ typedef struct Graph{
 Graph* initializeGraph(int k);
 Graph *addInterval(Graph *G, float u, float v);
 void printG(Graph* G);
+Graph *removeInterval(Graph *G, float u, float v);
 
 int main(){
     // chromatic number of a graph, it should be known as prior knowledge
@@ -28,10 +29,10 @@ int main(){
     Graph* G = new Graph;
     G = initializeGraph(k);
 
-    // operation: 0 for exit, 1 for query, 2 for add edge, 3 for remove edge, 4 for printing graph
+    // operation: 0 for exit, 1 for query, 2 for adding interval, 3 for removing interval, 4 for printing graph
     while(1){
         int operation;
-        cout << "Enter the operation (0 to exit, 1 for query, 2 for add edge, 3 for remove edge, 4 for printing graph): ";
+        cout << "Enter the operation (0 to exit, 1 for query, 2 for adding interval, 3 for removing interval, 4 for printing graph): ";
         cin >> operation;
         
         if(operation == 0) 
@@ -52,7 +53,7 @@ int main(){
             // remove edge
             float u, v;
             cin >> u >> v;
-            // G = removeInterval(G, u, v); // Assuming removeEdge is a function that removes an edge from the graph
+            G = removeInterval(G, u, v); // Assuming removeEdge is a function that removes an edge from the graph
         }
         else if(operation == 4){
             // print the graph
@@ -119,25 +120,6 @@ Graph *addInterval(Graph *G, float u, float v)
     return G;
 }
 
-/*
-Test case to check the addInterval function:
-3
-2
-1 2
-2
-1 2.5
-2
-0.5 1.5
-2
-0.5 0.8 
-2
-2 3
-2
-0.4 1
-4
-0
-*/
-
 void printG(Graph* G){
     if(G == NULL){
         cout << "Nothing more to print" << endl;
@@ -167,4 +149,40 @@ void printG(Graph* G){
     printG(G->right);
 
     return;
+}
+
+Graph *removeInterval(Graph *G, float u, float v)
+{
+    // If the current node is NULL, return NULL
+    if(G == NULL){
+        return NULL;
+    }
+
+    G->numberOfVertices--; // Decrement the number of vertices in the current node
+    G->Iv.erase(remove_if(G->Iv.begin(), G->Iv.end(), [u, v](pair<float, float> interval) {
+        return (interval.first == u && interval.second == v);
+    }), G->Iv.end()); // Remove the interval from the list of intervals
+
+    if(G->lv >= u && G->lv < v){
+        // If the current node's level is within the interval, remove the interval from this node
+        G->Sv.erase(remove_if(G->Sv.begin(), G->Sv.end(), [u, v](pair<float, float> interval) {
+            return (interval.first == u && interval.second == v);
+        }), G->Sv.end());
+    }
+    else if(G->lv < u){
+        // If the current node's level is less than u, go to the right child
+        G->right = removeInterval(G->right, u, v);
+    }
+    else{
+        // If the current node's level is greater than v, go to the left child
+        G->left = removeInterval(G->left, u, v);
+    }
+
+    // If the current node has no intervals left, delete it and return NULL
+    if(G->Sv.empty() && G->Iv.empty()){
+        delete G;
+        return NULL;
+    }
+    // Otherwise, return the current node
+    return G;
 }

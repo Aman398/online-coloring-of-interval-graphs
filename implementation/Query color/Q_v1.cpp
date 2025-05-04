@@ -17,6 +17,9 @@ typedef struct Graph{
 
 Graph* initializeGraph(int k);
 Graph *addInterval(Graph *G, float u, float v);
+Graph* updatePermutations(Graph *G, int u, int v);
+void findLRSet(vector<pair<float, float>> &L, Graph* G, int u, int v, int endU);
+void findColorsOfIntervals(vector<pair<float, float>> intervals, vector<int> &corrColors, Graph *G);
 Graph *removeInterval(Graph *G, float u, float v);
 Graph* fixGraph(Graph* G, int u, int v);
 Graph *constructBalancedG(Graph *G, vector<pair<float, float>> &newIntervals);
@@ -133,8 +136,94 @@ Graph *addInterval(Graph *G, float u, float v)
         // If the current node's level is greater than v, go to the left child
         G->left = addInterval(G->left, u, v);
     }
+
+    G = updatePermutations(G, u, v);
     
     return G;
+}
+
+Graph *updatePermutations(Graph *G, int u, int v){
+    // calculate begU, endU
+    float begU = INT_MAX;
+    float endU = INT_MIN;
+    for(int i=0;i<G->Iv.size();i++){
+        begU = min(begU, G->Iv[i].first);
+        endU = max(endU, G->Iv[i].first);
+    }
+
+    // find set Lu, Ru
+    vector<pair<float, float>> Lu, Ru;
+    Graph *leftG = G->left;
+    Graph *rightG = G->right;
+    
+    // Lu
+    if(leftG){
+        for(int i=0;i<leftG->Iv.size();i++){
+            if(leftG->Iv[i].first <= begU && leftG->Iv[i].second > begU)
+                Lu.push_back(leftG->Iv[i]);
+        }
+    }
+
+    // Ru
+    if(rightG){
+        for(int i=0;i<rightG->Iv.size();i++){
+            if(rightG->Iv[i].first <= begU && rightG->Iv[i].second > begU)
+                Ru.push_back(rightG->Iv[i]);
+        }
+    }
+
+    // find set L, R
+    vector<pair<float, float>> L, R;
+    findLRSet(L, G, u, v, endU);
+
+    int usetSize = Lu.size();
+    int rsetSize = Ru.size();
+    vector<int>LuColors(usetSize);
+    vector<int>RuColors(rsetSize);
+    findColorsOfIntervals(Lu, LuColors, G);
+    findColorsOfIntervals(Ru, RuColors, G);
+
+    // now I have begU, endU, Lu, LuColors, Ru, RuColors, L, R
+    
+
+
+
+}
+
+void findLRSet(vector<pair<float, float>> &L, vector<pair<float, float>> &R, Graph *G, int u, int v, int endU)
+{
+    if(G == NULL)
+        return;
+
+    for(int i=0;i<G->Sv.size();i++){
+        if(G->Sv[i].first == u && G->Sv[i].second == v)
+            return;
+    }
+
+    if(G->lv < u){
+        if(G->left != NULL){
+            if(G->left->lv < endU && endU <= G->lv){
+                L.push_back({G->lv, G->left->lv});
+            }
+            return findLRSet(L,R, G->left, u, v, endU);
+        }
+    }
+    if(G->lv >= v){
+        if(G->right != NULL){
+            if(G->lv < endU && endU <= G->right->lv){
+                R.push_back({G->lv, G->right->lv});
+            }
+            return findLRSet(L,R, G->right, u, v, endU);
+        }
+    }
+    return;
+}
+
+void findColorsOfIntervals(vector<pair<float, float>> intervals, vector<int> &corrColors, Graph *G){
+    for(int i=0;i<intervals.size();i++){
+        corrColors[i] = findColor(G, intervals[i].first, intervals[i].second);
+    }
+    return;
 }
 
 Graph *removeInterval(Graph *G, float u, float v)

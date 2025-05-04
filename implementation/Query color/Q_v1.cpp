@@ -1,4 +1,5 @@
 // Assuming no repetition of Intervals
+// Assuming the balancing factor as 3/4
 
 #include<bits/stdc++.h>
 using namespace std;
@@ -16,51 +17,61 @@ typedef struct Graph{
 
 Graph* initializeGraph(int k);
 Graph *addInterval(Graph *G, float u, float v);
-void printG(Graph* G);
 Graph *removeInterval(Graph *G, float u, float v);
+Graph* fixGraph(Graph* G, int u, int v);
+Graph *constructBalancedG(Graph *G, vector<pair<float, float>> &newIntervals);
+void printG(Graph* G, int level);
 
-int main(){
-    // chromatic number of a graph, it should be known as prior knowledge
-    cout << "Enter the chromatic number of the graph: ";
-    int k;
-    cin >> k;
+int main()
+    {
+        // chromatic number of a graph, it should be known as prior knowledge
+        cout << "Enter the chromatic number of the graph: ";
+        int k;
+        cin >> k;
 
-    // initializing the graph
-    Graph* G = new Graph;
-    G = initializeGraph(k);
+        // initializing the graph
+        Graph *G = new Graph;
+        G = initializeGraph(k);
 
-    // operation: 0 for exit, 1 for query, 2 for adding interval, 3 for removing interval, 4 for printing graph
-    while(1){
-        int operation;
-        cout << "Enter the operation (0 to exit, 1 for query, 2 for adding interval, 3 for removing interval, 4 for printing graph): ";
-        cin >> operation;
-        
-        if(operation == 0) 
-            break; 
+        // operation: 0 for exit, 1 for query, 2 for adding interval, 3 for removing interval, 4 for printing graph
+        while (1)
+        {
+            int operation;
+            cout << "Enter the operation (0 to exit, 1 for query, 2 for adding interval, 3 for removing interval, 4 for printing graph): ";
+            cin >> operation;
 
-        else if(operation == 1){
-        
-        }
+            if (operation == 0)
+                break;
 
-        else if(operation == 2){
-            // add edge
-            float u, v;
-            cout << "Enter the vertices (u, v): ";
-            cin >> u >> v;
-            G = addInterval(G, u, v); // Assuming addEdge is a function that adds an edge to the graph
-        }
-        else if(operation == 3){
-            // remove edge
-            float u, v;
-            cin >> u >> v;
-            G = removeInterval(G, u, v); // Assuming removeEdge is a function that removes an edge from the graph
-        }
-        else if(operation == 4){
-            // print the graph
-            cout << "Graph: " << endl;
-            printG(G);
-        }
-        else{
+            else if (operation == 1)
+            {
+            }
+
+            else if (operation == 2)
+            {
+                // add edge
+                float u, v;
+                cout << "Enter the vertices (u, v): ";
+                cin >> u >> v;
+                G = addInterval(G, u, v); // Assuming addEdge is a function that adds an edge to the graph
+                G = fixGraph(G, u, v);
+            }
+            else if (operation == 3)
+            {
+                // remove edge
+                float u, v;
+                cout << "Enter the vertices (u, v): ";
+                cin >> u >> v;
+                G = removeInterval(G, u, v); // Assuming removeEdge is a function that removes an edge from the graph
+                G = fixGraph(G, u, v);
+            }
+            else if (operation == 4)
+            {
+                // print the graph
+                cout << "Graph: " << endl;
+                printG(G, 0);
+            }
+            else{
             cout << "Invalid operation" << endl;
         }
     }
@@ -120,37 +131,6 @@ Graph *addInterval(Graph *G, float u, float v)
     return G;
 }
 
-void printG(Graph* G){
-    if(G == NULL){
-        cout << "Nothing more to print" << endl;
-        return;
-    }
-
-    cout << "lv: " << G->lv << endl;
-    
-    cout << "Sv: ";
-    for(auto interval : G->Sv){
-        cout << "[" << interval.first << ", " << interval.second << "] ";
-    }
-    cout << endl;
-    
-    cout << "numberOfVertices: " << G->numberOfVertices << endl;
-    
-    cout << "Iv: ";
-    for(auto interval : G->Iv){
-        cout << "[" << interval.first << ", " << interval.second << "] ";
-    }
-    cout << endl;
-
-    cout << "Left Tree:\n";
-    printG(G->left);
-
-    cout << "Right Tree:\n";
-    printG(G->right);
-
-    return;
-}
-
 Graph *removeInterval(Graph *G, float u, float v)
 {
     // If the current node is NULL, return NULL
@@ -185,4 +165,120 @@ Graph *removeInterval(Graph *G, float u, float v)
     }
     // Otherwise, return the current node
     return G;
+}
+
+Graph* fixGraph(Graph* G, int u, int v){
+    if(G == NULL){
+        return NULL;
+    }
+    if(G->lv == 0){
+        G->right = fixGraph(G->right, u, v);
+        return G;
+    }
+
+    int curr = G->numberOfVertices;
+    int left = G->left ? G->left->numberOfVertices : 0;
+    int right = G->right ? G->right->numberOfVertices : 0;
+
+    if((max(left, right)) > ((3 * curr) / 4)){
+        // Rebalance the tree
+        // the intervals which I have to rebalance are already in Sv, sort them first and store in new vector
+        vector<pair<float, float>> newIntervals = G->Iv;
+        sort(newIntervals.begin(), newIntervals.end(), [](pair<float, float> a, pair<float, float> b) {
+            return a.first < b.first;
+        });
+        
+        G = constructBalancedG(G, newIntervals);
+        return G;
+    }
+    else if(G->lv >= u && G->lv < v)
+        return G;
+    
+    // check in the path if any vertex is imbalance
+    if(G->lv >= v)
+        G->left = fixGraph(G->left, u, v);
+    else if(G->lv < u)
+        G->right = fixGraph(G->right, u, v);
+    return G;
+}
+
+Graph* constructBalancedG(Graph* G, vector<pair<float, float>>& newIntervals){
+    int n = newIntervals.size();
+    if(n == 0)
+        return NULL;
+    
+    // Create a new node with the new level
+    Graph* newNode = new Graph;
+    int newLv = newIntervals[n/2].first;
+    newNode->lv = newLv;
+    newNode->left = NULL;
+    newNode->right = NULL;
+    newNode->numberOfVertices = newIntervals.size();
+    newNode->Iv = newIntervals; 
+    newNode->Sv.clear();
+
+    // Split the intervals into left and right based on the new level
+    vector<pair<float, float>> leftIntervals, rightIntervals;
+    for(auto interval : newIntervals){
+        if(interval.second <= newLv){
+            leftIntervals.push_back(interval);
+        }
+        else if(interval.first > newLv){
+            rightIntervals.push_back(interval);
+        }
+        else{
+            newNode->Sv.push_back(interval);
+        }
+    }
+
+    // Recursively construct the left and right subtrees
+    newNode->left = constructBalancedG(newNode->left, leftIntervals);
+    newNode->right = constructBalancedG(newNode->right, rightIntervals);
+
+    return newNode;
+}
+
+void printG(Graph* G, int level){
+    if(G == NULL){
+        for(int i=0;i<=level;i++)
+            cout << "\t";
+            cout << "NULL" << endl;
+            return;
+        }
+        
+    for(int i=0;i<=level;i++)
+        cout << "\t";
+    cout << "lv: " << G->lv << endl;
+        
+    for(int i=0;i<=level;i++)
+        cout << "\t";
+    cout << "Sv: ";
+    for(auto interval : G->Sv){
+        cout << "[" << interval.first << ", " << interval.second << "] ";
+    }
+    cout << endl;
+
+    for (int i=0;i<=level;i++)
+        cout << "\t";
+    cout << "numberOfVertices: " << G->numberOfVertices << endl;
+
+    for (int i=0;i<=level;i++)
+        cout << "\t";
+    cout << "Iv: ";
+    for(auto interval : G->Iv){
+        cout << "[" << interval.first << ", " << interval.second << "] ";
+    }
+    cout << endl;
+
+    for (int i=0;i<=level;i++)
+        cout << "\t";
+    cout << "Left Tree:\n";
+    printG(G->left, level+1);
+
+    for (int i=0;i<=level;i++)
+        cout << "\t";
+    cout << "Right Tree:\n";
+    printG(G->right, level+1);
+
+    return;
 }

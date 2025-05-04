@@ -20,7 +20,9 @@ Graph *addInterval(Graph *G, float u, float v);
 Graph *removeInterval(Graph *G, float u, float v);
 Graph* fixGraph(Graph* G, int u, int v);
 Graph *constructBalancedG(Graph *G, vector<pair<float, float>> &newIntervals);
-void printG(Graph* G, int level);
+int findColor(Graph *G, int u, int v);
+int findIndex(Graph *G, int u, int v);
+void printG(Graph *G, int level);
 
 int main()
     {
@@ -45,13 +47,17 @@ int main()
 
             else if (operation == 1)
             {
+                float u, v;
+                cout << "Enter the vertices (u, v) of interval whose color you want : ";
+                cin >> u >> v;
+                int color = findColor(G, u, v);
             }
 
             else if (operation == 2)
             {
                 // add edge
                 float u, v;
-                cout << "Enter the vertices (u, v): ";
+                cout << "Enter the vertices (u, v) of interval you want to add: ";
                 cin >> u >> v;
                 G = addInterval(G, u, v); // Assuming addEdge is a function that adds an edge to the graph
                 G = fixGraph(G, u, v);
@@ -60,7 +66,7 @@ int main()
             {
                 // remove edge
                 float u, v;
-                cout << "Enter the vertices (u, v): ";
+                cout << "Enter the vertices (u, v) of interval you want to remove: ";
                 cin >> u >> v;
                 G = removeInterval(G, u, v); // Assuming removeEdge is a function that removes an edge from the graph
                 G = fixGraph(G, u, v);
@@ -92,8 +98,8 @@ Graph* initializeGraph(int k){
     G->PermutationL.clear();
     G->PermutationR.clear();
     
-    G->PermutationL.resize(k+1);
-    G->PermutationR.resize(k+1);
+    G->PermutationL.resize(k);
+    G->PermutationR.resize(k);
 
     return G;
 }
@@ -238,7 +244,53 @@ Graph* constructBalancedG(Graph* G, vector<pair<float, float>>& newIntervals){
     return newNode;
 }
 
-void printG(Graph* G, int level){
+int findColor(Graph *G, int u, int v){
+    int index = findIndex(G, u, v);
+
+    if(index == -1)
+        return -1;
+    
+    int color = G->PermutationR[index];
+
+    while(1){
+        if(G == NULL)
+            return -1;
+
+        // if interval is in Sv then we are done
+        if ((G->Sv.size() > index) && (G->Sv[index].first == u) && (G->Sv[index].second == v)){
+            return color;
+        }
+        
+        // if interval is in left tree, then left's permutation, else right's permutation.
+        if(G->lv >= v){
+            color = G->PermutationL[index];
+            G = G->left;
+        }
+        else{
+            color = G->PermutationR[index];
+            G = G->right;
+        }
+    }
+}
+
+int findIndex(Graph *G, int u, int v){
+    if(G == NULL)
+        return -1;
+    
+    // search for (u, v) in G->Sv
+    for(int i=0;i<G->Sv.size();i++){
+        if(G->Sv[i].first == u && G->Sv[i].second == v)
+            return i;
+    }
+
+    if(G->lv >= v)
+        return findIndex(G->left, u, v);
+    
+    return findIndex(G->right, u, v);
+}
+
+void printG(Graph *G, int level)
+{
     if(G == NULL){
         for(int i=0;i<=level;i++)
             cout << "\t";
